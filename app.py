@@ -23,6 +23,25 @@ st.title("✅ WhatsApp Number Filter")
 st.caption("CSV ya Excel upload karein — pata chalega kaun se numbers WhatsApp par registered hain.")
 
 
+def _secret(name, default=""):
+    try:
+        return st.secrets.get(name, default)
+    except Exception:  # no secrets file locally
+        return default
+
+
+APP_PASSWORD = _secret("APP_PASSWORD")
+if APP_PASSWORD:
+    if st.session_state.get("auth") != True:
+        pw = st.text_input("Password", type="password")
+        if pw and pw == APP_PASSWORD:
+            st.session_state["auth"] = True
+            st.rerun()
+        elif pw:
+            st.error("Ghalat password")
+        st.stop()
+
+
 # ---------------------------------------------------------------- helpers
 def clean_number(raw, default_country):
     """Normalise a cell into something the API accepts (E.164 when possible)."""
@@ -102,8 +121,12 @@ with st.sidebar:
                      help="API key ke baghair UI test karne ke liye. Results asli nahi hote.")
     sandbox = st.toggle("Sandbox key", value=False, disabled=demo,
                         help="Public test key — sirf test numbers par kaam karti hai.")
-    api_key = st.text_input("API key", type="password", disabled=demo or sandbox,
-                            value=os.getenv("MOBILEVALIDATE_API_KEY", ""))
+    saved_key = _secret("MOBILEVALIDATE_API_KEY") or os.getenv("MOBILEVALIDATE_API_KEY", "")
+    if saved_key:
+        st.success("API key loaded (secrets)")
+        api_key = saved_key
+    else:
+        api_key = st.text_input("API key", type="password", disabled=demo or sandbox)
     default_country = st.text_input("Default country (ISO, e.g. PK)", value="PK", max_chars=2).upper().strip()
     st.caption("Jin numbers mein + / country code nahi hoga unhe is country ka maana jayega.")
 
